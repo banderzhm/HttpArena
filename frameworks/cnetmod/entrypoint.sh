@@ -4,6 +4,17 @@ set -eu
 workers="$(nproc)"
 CNETMOD_QUIC_GSO="${CNETMOD_QUIC_GSO:-1}"
 export CNETMOD_QUIC_GSO
+mode="${CNETMOD_MODE:-server}"
+
+if [ "${mode}" = "gateway-h3" ]; then
+    exec /gateway-h3 /certs/server.crt /certs/server.key 8443 "${workers}" \
+        /data/static "${CNETMOD_GATEWAY_UPSTREAM:-http://127.0.0.1:8085}"
+fi
+
+if [ "${mode}" = "backend" ]; then
+    exec /server
+fi
+
 if [ -r /certs/server.crt ] && [ -r /certs/server.key ]; then
     /server-h3 /certs/server.crt /certs/server.key 8443 "${workers}" /data/static &
     h3_pid="$!"

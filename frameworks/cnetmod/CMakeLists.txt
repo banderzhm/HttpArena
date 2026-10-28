@@ -34,15 +34,23 @@ add_subdirectory("${CNETMOD_SOURCE_DIR}" cnetmod-build EXCLUDE_FROM_ALL)
 add_executable(cnetmod-httparena server.cpp)
 target_link_libraries(cnetmod-httparena PRIVATE
     cnetmod::grpc cnetmod::postgresql cnetmod::redis cnetmod::websocket)
-cnetmod_enable_mimalloc(cnetmod-httparena)
 
 add_executable(cnetmod-httparena-h3
     "${CNETMOD_SOURCE_DIR}/testing/bench/arena_h3_server.cpp")
 target_link_libraries(cnetmod-httparena-h3 PRIVATE cnetmod::http)
-cnetmod_enable_mimalloc(cnetmod-httparena-h3)
+
+add_executable(cnetmod-httparena-gateway-h3 gateway_h3.cpp)
+target_link_libraries(cnetmod-httparena-gateway-h3 PRIVATE cnetmod::http)
+
+if(COMMAND cnetmod_enable_mimalloc)
+    cnetmod_enable_mimalloc(cnetmod-httparena)
+    cnetmod_enable_mimalloc(cnetmod-httparena-h3)
+    cnetmod_enable_mimalloc(cnetmod-httparena-gateway-h3)
+endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    foreach(target cnetmod-httparena cnetmod-httparena-h3)
+    foreach(target cnetmod-httparena cnetmod-httparena-h3
+            cnetmod-httparena-gateway-h3)
         target_compile_options(${target} PRIVATE
             -O3 -DNDEBUG -march=x86-64-v3 -mprefer-vector-width=128
             -flto=thin)

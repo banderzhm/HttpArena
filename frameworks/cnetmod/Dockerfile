@@ -20,12 +20,12 @@ RUN curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key \
 WORKDIR /src
 RUN git clone --filter=blob:none \
         https://github.com/banderzhm/cnetmod.git /src/cnetmod \
-    && git -C /src/cnetmod checkout a937f1c1852301cd093ea498382911d80ba8ef63 \
+    && git -C /src/cnetmod checkout 423cb06d171525339bcd6907d7cb9043c25adfc2 \
     && git -C /src/cnetmod submodule update --init --depth 1 \
         3rdparty/boringssl 3rdparty/json 3rdparty/mimalloc \
         3rdparty/spdlog 3rdparty/stdexec
 
-COPY CMakeLists.txt server.cpp /src/entry/
+COPY CMakeLists.txt server.cpp gateway_h3.cpp /src/entry/
 WORKDIR /src/entry
 
 RUN cmake -S . -B build -G Ninja \
@@ -37,6 +37,7 @@ RUN cmake -S . -B build -G Ninja \
         -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" \
     && cmake --build build \
         --target cnetmod-httparena cnetmod-httparena-h3 \
+            cnetmod-httparena-gateway-h3 \
         --parallel "$(nproc)"
 
 FROM ubuntu:24.04
@@ -50,6 +51,7 @@ COPY --from=build /usr/lib/x86_64-linux-gnu/libc++.so.1* /usr/local/lib/
 COPY --from=build /usr/lib/x86_64-linux-gnu/libc++abi.so.1* /usr/local/lib/
 COPY --from=build /src/entry/build/cnetmod-httparena /server
 COPY --from=build /src/entry/build/cnetmod-httparena-h3 /server-h3
+COPY --from=build /src/entry/build/cnetmod-httparena-gateway-h3 /gateway-h3
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh && ldconfig
 
